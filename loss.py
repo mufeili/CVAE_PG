@@ -1,4 +1,4 @@
-import torch
+import torch as th
 
 
 def fnn_policy_loss(q_value, value_estimated, probabilities):
@@ -19,5 +19,5 @@ def fnn_policy_loss(q_value, value_estimated, probabilities):
     -------
     loss: Variable whose data is Tensor of size 1
     """
-    return -torch.sum((q_value - value_estimated) *
-                      torch.log(probabilities))
+    return -th.sum((q_value - value_estimated - 1) *
+                   th.log(probabilities))

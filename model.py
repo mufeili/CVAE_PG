@@ -8,10 +8,8 @@ class FNN(nn.Module):
     """
     def __init__(self):
         super(FNN, self).__init__()
-        self.fc1 = nn.Linear(6, 24)
-        self.fc21 = nn.Linear(24, 1)
-        self.fc22 = nn.Linear(24, 1)
-        self.fc23 = nn.Linear(24, 1)
+        self.fc1 = nn.Linear(6, 600)
+        self.fc2 = nn.Linear(600, 3)
 
     def forward(self, s):
         """
@@ -23,19 +21,13 @@ class FNN(nn.Module):
 
         Returns
         -------
-        p1: Variable whose data is Tensor of shape 1 x 1 with requires_grad=True
-            The data of p1 may be interpreted as probability of taking discrete
-            action 1.
-        p2: Same as p1, except that p2 corresponds to discrete action 2.
-        p3: Same as p1, except that p3 corresponds to discrete action 3.
-
+        p: Variable whose data is Tensor of shape 1 x 3 with requires_grad=True
+           The data of p may be interpreted as probability of taking discrete
+           action 1, 2, 3 separately.
         """
         s_ = F.tanh(self.fc1(s))
-        p1 = F.sigmoid(self.fc21(s_))
-        p2 = F.sigmoid(self.fc22(s_))
-        p3 = F.sigmoid(self.fc23(s_))
-        p_sum = p1 + p2 + p3
-        return p1 / p_sum, p2 / p_sum, p3 / p_sum
+        p = F.softmax(F.tanh(self.fc2(s_)))
+        return p
 
 
 class Value(nn.Module):
@@ -44,8 +36,8 @@ class Value(nn.Module):
     """
     def __init__(self):
         super(Value, self).__init__()
-        self.fc1 = nn.Linear(6, 24)
-        self.fc2 = nn.Linear(24, 1)
+        self.fc1 = nn.Linear(6, 600)
+        self.fc2 = nn.Linear(600, 1)
 
     def forward(self, s):
         """
