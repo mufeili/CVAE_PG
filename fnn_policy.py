@@ -93,7 +93,7 @@ def main(args):
             state_ = th.from_numpy(state_.reshape(1, -1))
             state = Variable(state_, requires_grad=False).type(Tensor)
             p = trained_model.forward(state)
-            action = th.max(p, 1)[1].data[0][0]
+            action = th.max(p, 1)[1].data[0]
             next_state_, reward_, done, info_ = env.step(action)
             cumulative_return += (args.gamma ** timestep) * reward_
             state_ = next_state_

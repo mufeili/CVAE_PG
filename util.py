@@ -3,7 +3,8 @@ from collections import namedtuple
 
 # Create a new tuple subclass called Record.
 Record = namedtuple('Record',
-                    ('state', 'action', 'value', 'probability'))
+                    ('state', 'action', 'value', 'probability_action',
+                     'probabilities'))
 
 
 class Records:

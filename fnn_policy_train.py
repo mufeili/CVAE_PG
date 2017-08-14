@@ -87,7 +87,7 @@ def fnn_policy_train(env,
 
                 next_state_, reward_, done_, info_ = env.step(action[0])
                 value = Tensor([reward_]).view(1, -1)
-                episode_record.append(Record(state_, action, value, p_action))
+                episode_record.append(Record(state_, action, value, p_action, p.view(1, -1)))
 
                 # Update state values
                 for i in range(0, len(episode_record)-1):
@@ -107,7 +107,8 @@ def fnn_policy_train(env,
                                      requires_grad=False).type(Tensor)
             value_history = Variable(th.cat(history.value),
                                      requires_grad=False).type(Tensor)
-            probability_history = th.cat(history.probability).type(Tensor)
+            prob_action_history = th.cat(history.probability_action).type(Tensor)
+            prob_history = th.cat(history.probabilities).type(Tensor)
 
             # Update the value network first.
             for _ in range(args.value_update_times):
@@ -122,7 +123,8 @@ def fnn_policy_train(env,
             policy_optimizer.zero_grad()
 
             value_estimated = value_network.forward(state_history)
-            policy_loss = fnn_policy_loss(value_history, value_estimated, probability_history.view(-1, 1))
+            policy_loss = fnn_policy_loss(value_history, value_estimated, prob_action_history.view(-1, 1),
+                                          prob_history.view(-1, 3))
             policy_loss = th.div(policy_loss, records.size())
             policy_losses.append(policy_loss.data[0])
 
