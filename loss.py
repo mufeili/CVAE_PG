@@ -45,7 +45,7 @@ def kl_divergence(mean1, log_var1, mean2, log_var2):
 
     Returns
     -------
-    KL_divergences: Variable whose data is Tensor of shape n x 1
+    KL_divergences: Variable whose data is Tensor of size n x 1
         the KL divergences between each pair of multivariate
         Gaussian distributions
     """
@@ -57,7 +57,7 @@ def kl_divergence(mean1, log_var1, mean2, log_var2):
     cov2 = th.exp(log_var2)
     cov2_inverse = Variable(th.ones(cov2.size()), requires_grad=True)/cov2
     return 0.5 * (th.sum(cov2_inverse * cov1 + (mean2 - mean1) * cov2_inverse * (mean2 - mean1), 1).view(-1, 1)
-                  - mean1.size()[1] + th.log(th.sum(cov1, 1).view(-1, 1)/th.sum(cov2, 1).view(-1, 1)))
+                  - mean1.size()[1] + th.sum(log_var2 - log_var1, 1))
 
 
 def cvae_policy_loss(cumulative_return, value_estimated, recon_prob_action,
