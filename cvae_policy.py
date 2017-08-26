@@ -149,7 +149,7 @@ def main(args):
     # Don't forget to fill in your api_key.
     # gym.upload(results_directory, api_key='')
 
-discounting = [1, 0.9, 0.3, 0.1]
+discounting = [1, 0.9, 0.3]
 frequency = [5, 10, 15, 20]
 times_update = [1, 3, 10]
 
