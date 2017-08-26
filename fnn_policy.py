@@ -59,7 +59,6 @@ else:
     th.manual_seed(args_.seed)
     FloatTensor = th.FloatTensor
     import matplotlib.pyplot as plt
-    plt.ion()
     try:
         os.makedirs('fnn/test')
     except OSError as exception:
@@ -94,11 +93,11 @@ def main(args):
                                      '_value_update_times_', str(args.value_update_times)])
         env = gym.wrappers.Monitor(env, results_directory)
 
-    for i in range(args.test_time):
-
+    if not args.cuda:
+        plt.ion()
         test_returns = []
-        time_str = time.strftime("%Y%m%d-%H%M%S")
 
+    for i in range(args.test_time):
         state_ = env.reset()
         done = False
         cumulative_return = 0
@@ -120,10 +119,10 @@ def main(args):
         print('====> Cumulative return: {}'.format(cumulative_return))
 
         plt.clf()
-        plt.figure(2)
+        plt.figure(1)
         plt.xlabel('episodes')
         plt.ylabel('cumulative returns')
-        plt.plot(test_returns)
+        plt.plot(list(test_returns)
         plt.show()
         plt.savefig(''.join(['fnn/test/', time_str, '_discounting_',
                              str(args.gamma), '_update_frequency_', str(args.update_frequency),
@@ -131,6 +130,7 @@ def main(args):
 
     if not args.cuda:
         plt.ioff()
+        plt.close()
 
     env.close()
 

@@ -136,7 +136,7 @@ def fnn_policy_train(env,
             value_estimated = value_estimated_.detach()
             policy_loss = fnn_policy_loss(value_history, value_estimated, prob_action_history.view(-1, 1),
                                           prob_history.view(-1, 3))
-            policy_loss = th.div(policy_loss, records.size())
+            policy_loss = th.div(policy_loss, state_history.size()[0])
             policy_losses.append(policy_loss.data[0])
 
             if len(policy_losses) >= 2:

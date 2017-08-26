@@ -17,7 +17,7 @@ def cvae_policy_train(env,
                       value_optimizer,
                       value_loss_function,
                       args,
-                      convergence_threshold=0.1):
+                      convergence_threshold=1):
     """
 
     Parameters
@@ -155,7 +155,7 @@ def cvae_policy_train(env,
             policy_loss = cvae_policy_loss(value_history, value_estimated, recon_p_action,
                                            prior_h_mean_history, prior_h_log_var_history,
                                            pos_h_mean, pos_h_log_var)
-            policy_loss = th.div(policy_loss, records.size())
+            policy_loss = th.div(policy_loss, value_history.size()[0])
             policy_losses.append(policy_loss.data[0])
 
             if len(policy_losses) >= 2:

@@ -36,7 +36,7 @@ parser.add_argument('--update-frequency', type=int, default=5, metavar='N',
                          'episodes.')
 parser.add_argument('--value-update-times', type=int, default=1, metavar='N',
                     help='Times to update a value network when it is the time for update')
-parser.add_argument('--episodes', type=int, default=10000, metavar='N',
+parser.add_argument('--episodes', type=int, default=2000, metavar='N',
                     help='number of episodes for training')
 parser.add_argument('--lr-cvae', type=float, default=1e-3, metavar='N',
                     help='learning rate for optimizing CVAE policy')
@@ -68,7 +68,6 @@ else:
     th.manual_seed(args_.seed)
     FloatTensor = th.FloatTensor
     import matplotlib.pyplot as plt
-    plt.ion()
     try:
         os.makedirs('cvae/test')
     except OSError as exception:
@@ -103,11 +102,11 @@ def main(args):
                                      '_value_update_times_', str(args.value_update_times)])
         env = gym.wrappers.Monitor(env, results_directory)
 
-    for i in range(args.test_time):
-
+    if not args.cuda:
+        plt.ion()
         test_returns = []
-        time_str = time.strftime("%Y%m%d-%H%M%S")
 
+    for i in range(args.test_time):
         state_ = env.reset()
         done = False
         cumulative_return = 0
@@ -126,10 +125,12 @@ def main(args):
                 cumulative_return += (args.gamma ** timestep) * reward_
                 state_ = next_state_
 
+        test_returns.append(cumulative_return)
+
         print('====> Cumulative return: {}'.format(cumulative_return))
 
         plt.clf()
-        plt.figure(2)
+        plt.figure(1)
         plt.xlabel('episodes')
         plt.ylabel('cumulative returns')
         plt.plot(test_returns)
@@ -140,6 +141,7 @@ def main(args):
 
     if not args.cuda:
         plt.ioff()
+        plt.close()
 
     env.close()
 
