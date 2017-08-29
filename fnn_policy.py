@@ -96,9 +96,10 @@ def main(args):
                                      '_value_update_times_', str(args.value_update_times)])
         env = gym.wrappers.Monitor(env, results_directory)
 
+    test_returns = []
+
     if not args.cuda:
         plt.ion()
-        test_returns = []
 
     for i in range(args.test_time):
         state_ = env.reset()
