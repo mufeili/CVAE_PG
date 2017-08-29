@@ -152,16 +152,17 @@ hyperparameters = [(1, 20, 1), (1, 5, 3), (1, 10, 3), (1, 20, 3), (1, 5, 10),
                    (1, 10, 10), (1, 15, 10)]
 
 for discount, freq, times in hyperparameters:
-    args_.gamma = discount
-    args_.update_frequency = freq
-    args_.value_update_times = times
+    for _ in range(3):
+        args_.gamma = discount
+        args_.update_frequency = freq
+        args_.value_update_times = times
 
-    max_averaged_returns_ = max_averaged_returns
-    averaged_return = main(args_)
-    if averaged_return > max_averaged_returns_:
-        max_averaged_returns_ = averaged_return
-    if max_averaged_returns != max_averaged_returns_:
-        print('====> discount: {}, update frequency: {}, update times: {}, '
-              'max averaged return: {}'.format(discount, freq, times,
-                                               max_averaged_returns_))
-    max_averaged_returns = max_averaged_returns_
+        max_averaged_returns_ = max_averaged_returns
+        averaged_return = main(args_)
+        if averaged_return > max_averaged_returns_:
+            max_averaged_returns_ = averaged_return
+        if max_averaged_returns != max_averaged_returns_:
+            print('====> discount: {}, update frequency: {}, update times: {}, '
+                  'max averaged return: {}'.format(discount, freq, times,
+                                                   max_averaged_returns_))
+        max_averaged_returns = max_averaged_returns_
