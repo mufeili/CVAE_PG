@@ -122,7 +122,7 @@ def main(args):
         plt.figure(1)
         plt.xlabel('episodes')
         plt.ylabel('cumulative returns')
-        plt.plot(list(test_returns)
+        plt.plot(list(test_returns))
         plt.show()
         plt.savefig(''.join(['fnn/test/', time_str, '_discounting_',
                              str(args.gamma), '_update_frequency_', str(args.update_frequency),
