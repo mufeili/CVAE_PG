@@ -151,12 +151,10 @@ def fnn_policy_train(env,
 
             policy_optimizer.step()
 
-            """
             print('====> Episode: {} value_loss: {:.4f} policy_loss: {:.4f} return: {}'.format(episode,
                                                                                                value_losses[-1],
                                                                                                policy_losses[-1],
                                                                                                returns[-1]))
-            """
 
             if not args.cuda:
                 plt.clf()
