@@ -148,8 +148,7 @@ def main(args):
 max_averaged_returns = -500
 max_model_parameters = (0, 0, 0)
 
-hyperparameters = [(1, 20, 1), (1, 5, 3), (1, 10, 3), (1, 20, 3), (1, 5, 10),
-                   (1, 10, 10), (1, 15, 10)]
+hyperparameters = [(1, 5, 3), (1, 10, 3)]
 
 for discount, freq, times in hyperparameters:
     for _ in range(3):
