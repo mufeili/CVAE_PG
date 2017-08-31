@@ -148,10 +148,10 @@ def main(args):
 max_averaged_returns = -500
 max_model_parameters = (0, 0, 0)
 
-hyperparameters = [(1, 5, 3), (1, 10, 3)]
+hyperparameters = [(1, 10, 3)]
 
 for discount, freq, times in hyperparameters:
-    for _ in range(3):
+    for _ in range(10):
         args_.gamma = discount
         args_.update_frequency = freq
         args_.value_update_times = times
