@@ -12,14 +12,13 @@ import numpy as np
 import time
 from collections import namedtuple
 from itertools import count
-from util import ReplayBuffer
+from util import Logger, ReplayBuffer
+from model import Policy
 
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torch.autograd as autograd
 from torch.autograd import Variable
 
 
@@ -44,27 +43,7 @@ env.seed(args.seed)
 torch.manual_seed(args.seed)
 
 
-SavedInfo = namedtuple('SavedInfo', ['state', 'action', 'value'])
-
-
-class Policy(nn.Module):
-    def __init__(self):
-        super(Policy, self).__init__()
-        self.affine1 = nn.Linear(6, 18)
-        self.affine2 = nn.Linear(18, 36)
-        self.affine3 = nn.Linear(36, 18)
-        self.action_head = nn.Linear(18, 3)
-        self.value_head = nn.Linear(18, 1)
-        self.saved_info = []
-        self.rewards = []
-
-    def forward(self, x):
-        x = F.leaky_relu(self.affine1(x))
-        x = F.leaky_relu(self.affine2(x))
-        x = F.leaky_relu(self.affine3(x))
-        action_scores = self.action_head(x)
-        state_values = self.value_head(x)
-        return F.softmax(action_scores), state_values
+SavedInfo = namedtuple('SavedInfo', ['state', 'log_prob', 'action', 'value'])
 
 
 model = Policy()
@@ -76,34 +55,46 @@ def select_action(state_):
     state = torch.from_numpy(state_).float().unsqueeze(0)
     probs, state_value = model(Variable(state))
     action_ = probs.multinomial()
-    model.saved_info.append(SavedInfo(state, action_, state_value))
+    model.saved_info.append(SavedInfo(state, torch.log(probs.gather(1, Variable(action_.data))), action_, state_value))
     return action_.data
 
 
 time_str = time.strftime("%Y%m%d-%H%M%S")
+print('time_str: ', time_str)
 outdir = ''.join(['Acrobot-results_', time_str])
 env = gym.wrappers.Monitor(env, outdir, force=True)
 
+# Set the logger.
+logger = Logger('./logs_actor_critic')
 
-def finish_episode():
+
+def finish_episode(ep_number):
     R = 0
     saved_info = model.saved_info
     value_loss = 0
+    policy_loss = 0
     cum_returns_ = []
+
     for r in model.rewards[::-1]:
         R = r + args.gamma * R
         cum_returns_.insert(0, R)
+
     cum_returns = torch.Tensor(cum_returns_)
-    cum_returns = (cum_returns - cum_returns.mean()) / (cum_returns.std() + np.finfo(np.float32).eps)
-    for (state, action, value), r in zip(saved_info, cum_returns):
+    cum_returns = (cum_returns - cum_returns.mean()) \
+                  / (cum_returns.std() + np.finfo(np.float32).eps)
+
+    for (state, log_prob, action, value), r in zip(saved_info, cum_returns):
         reward = r - value.data[0, 0]
-        action.reinforce(reward)
+        policy_loss -= log_prob * reward
         value_loss += F.smooth_l1_loss(value, Variable(torch.Tensor([r])))
         buffer.push(state, action, r)
+
+    logger.scalar_summary('value_loss', value_loss.data[0], ep_number)
+    logger.scalar_summary('policy_loss', policy_loss.data[0, 0], ep_number)
+
+    total_loss = policy_loss + value_loss
     optimizer.zero_grad()
-    final_nodes = [value_loss] + list(map(lambda p: p.action, saved_info))
-    gradients = [torch.ones(1)] + [None] * len(saved_info)
-    autograd.backward(final_nodes, gradients)
+    total_loss.backward()
     optimizer.step()
     del model.rewards[:]
     del model.saved_info[:]
@@ -122,12 +113,15 @@ for episode_no in count(1):
             break
 
     running_reward = running_reward * 0.99 + t * 0.01
-    finish_episode()
+    finish_episode(episode_no)
     if episode_no % args.log_interval == 0:
         print('Episode {}\tLast length: {:5d}\tAverage length: {:.2f}'.format(
             episode_no, t, running_reward))
-    if episode_no > 160000:
+    if episode_no > 80000:
         print("Running reward is now {} and "
               "the last episode runs to {} time steps!".format(running_reward, t))
         env.close()
+
+        # Save the model for later use.
+        torch.save(model, ''.join(['actor_critic_', time_str]))
         break
