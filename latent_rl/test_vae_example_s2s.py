@@ -9,14 +9,17 @@ import torch
 from torch.autograd import Variable
 
 parser = argparse.ArgumentParser(description='Test VAE trained')
-parser.add_argument('--VAE-dir', type=str, default=None, help='directory for model')
+parser.add_argument('--policy-dir', type=str, default='actor_critic_20171020-082409',
+                    help='directory for trained policy to generate experience')
+parser.add_argument('--VAE-dir', type=str, default='VAE_size512_batch_False20171020-164149',
+                    help='directory for trained VAE model')
 
 args = parser.parse_args()
 
 env1 = gym.make('Acrobot-v1')
 env2 = gym.make('Acrobot-v1')
 
-policy = torch.load('actor_critic_20171004-221830')
+policy = torch.load(args.policy_dir)
 vae = torch.load(args.VAE_dir)
 
 

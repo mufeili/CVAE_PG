@@ -11,11 +11,11 @@ import torch.optim as optim
 from torch.autograd import Variable
 
 parser = argparse.ArgumentParser(description='reconstruct state from state using VAE')
-parser.add_argument('--batch-size', type=int, default=16, metavar='N',
+parser.add_argument('--batch-size', type=int, default=512, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--iterations', type=int, default=10000, metavar='N',
                     help='number of iterations to train for each epoch(default: 10000)')
-parser.add_argument('--epochs', type=int, default=100, metavar='N',
+parser.add_argument('--epochs', type=int, default=5, metavar='N',
                     help='number of epochs to train(default: 10)')
 parser.add_argument('--use-cuda', action='store_true', default=False,
                     help='enables CUDA training')
@@ -26,6 +26,12 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
 parser.add_argument('--buffer-capacity', type=int, default=50000, metavar='N',
                     help='capacity for the replay buffer')
 parser.add_argument('--loss', type=str, help='loss function to use')
+parser.add_argument('--batch-norm', action='store_true', default=False,
+                    help='whether to use batch normalization in VAE')
+parser.add_argument('--kl-divergence', action='store_true', default=False,
+                    help='use kl divergence in the loss function or not')
+parser.add_argument('--policy-dir', type=str, default='actor_critic_20171020-082409',
+                    help='directory for trained policy to generate experience')
 args = parser.parse_args()
 args.cuda = args.use_cuda and torch.cuda.is_available()
 
@@ -35,7 +41,8 @@ if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
 
-model = VAE(input_size=4, hidden1_size=64, hidden2_size=32)
+model = VAE(input_size=4, hidden1_size=64, hidden2_size=32,
+            batch_norm=args.batch_norm)
 if args.cuda:
     model.cuda()
     Tensor = torch.cuda.FloatTensor
@@ -63,13 +70,15 @@ def loss_function(recon_x, x, mu, logvar, logger, timestep):
     KLD = torch.sum(KLD_element).mul_(-0.5)
     logger.scalar_summary('KL divergence', KLD.data[0], timestep)
 
-    # return recon_loss + KLD
-    return recon_loss
+    if args.kl_divergence:
+        return recon_loss + KLD
+    else:
+        return recon_loss
 
 
 optimizer = optim.Adam(model.parameters(), lr=5e-4)
 
-policy = torch.load('actor_critic_20171004-221830')
+policy = torch.load(args.policy_dir)
 
 env = gym.make('Acrobot-v1')
 env.seed(args.seed)
@@ -117,4 +126,4 @@ env.close()
 model.eval()
 
 time_str = time.strftime("%Y%m%d-%H%M%S")
-torch.save(model, ''.join(['VAE_', time_str]))
+torch.save(model, ''.join(['VAE_size', str(args.batch_size), '_batch_', str(args.batch_norm), time_str]))

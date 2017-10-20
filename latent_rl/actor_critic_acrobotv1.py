@@ -19,6 +19,7 @@ from model import Policy
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import torch.autograd as autograd
 from torch.autograd import Variable
 
 
@@ -33,6 +34,7 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='interval between training status logs (default: 10)')
 parser.add_argument('--buffer-capacity', type=int, default=10000, metavar='N',
                     help='capacity for the replay buffer')
+parser.add_argument('--reinforce', action='store_true', default=False)
 args = parser.parse_args()
 
 
@@ -65,14 +67,20 @@ outdir = ''.join(['Acrobot-results_', time_str])
 env = gym.wrappers.Monitor(env, outdir, force=True)
 
 # Set the logger.
-logger = Logger('./logs_actor_critic')
+if args.reinforce:
+    logger = Logger('./logs_actor_critic_reinforce')
+else:
+    logger = Logger('./logs_actor_critic')
 
 
 def finish_episode(ep_number):
     R = 0
     saved_info = model.saved_info
     value_loss = 0
-    policy_loss = 0
+
+    if not args.reinforce:
+        policy_loss = 0
+
     cum_returns_ = []
 
     for r in model.rewards[::-1]:
@@ -85,16 +93,31 @@ def finish_episode(ep_number):
 
     for (state, log_prob, action, value), r in zip(saved_info, cum_returns):
         reward = r - value.data[0, 0]
-        policy_loss -= log_prob * reward
+
+        if args.reinforce:
+            action.reinforce(reward)
+        else:
+            policy_loss -= log_prob * reward
+
         value_loss += F.smooth_l1_loss(value, Variable(torch.Tensor([r])))
         buffer.push(state, action, r)
 
     logger.scalar_summary('value_loss', value_loss.data[0], ep_number)
-    logger.scalar_summary('policy_loss', policy_loss.data[0, 0], ep_number)
 
-    total_loss = policy_loss + value_loss
+    if not args.reinforce:
+        logger.scalar_summary('policy_loss', policy_loss.data[0, 0], ep_number)
+        total_loss = policy_loss + value_loss
+        
     optimizer.zero_grad()
-    total_loss.backward()
+
+    if args.reinforce:
+        final_nodes = [value_loss] + list(map(lambda p: p.action,
+            saved_info))
+        gradients = [torch.ones(1)] + [None] * len(saved_info)
+        autograd.backward(final_nodes, gradients)
+    else:
+        total_loss.backward()
+
     optimizer.step()
     del model.rewards[:]
     del model.saved_info[:]
@@ -111,6 +134,8 @@ for episode_no in count(1):
         model.rewards.append(reward)
         if done:
             break
+
+    logger.scalar_summary('cum_return', t + 1, episode_no)
 
     running_reward = running_reward * 0.99 + t * 0.01
     finish_episode(episode_no)
