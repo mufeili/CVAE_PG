@@ -25,13 +25,15 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 parser.add_argument('--buffer-capacity', type=int, default=50000, metavar='N',
                     help='capacity for the replay buffer')
-parser.add_argument('--loss', type=str, help='loss function to use')
+parser.add_argument('--loss', type=str, default='l2', help='loss function to use')
 parser.add_argument('--batch-norm', action='store_true', default=False,
                     help='whether to use batch normalization in VAE')
 parser.add_argument('--kl-divergence', action='store_true', default=False,
                     help='use kl divergence in the loss function or not')
 parser.add_argument('--policy-dir', type=str, default='actor_critic_20171020-082409',
                     help='directory for trained policy to generate experience')
+parser.add_argument('--kl-weight', type=float, default=1,
+                    help='hyperparameter that discounts kl divergence')
 args = parser.parse_args()
 args.cuda = args.use_cuda and torch.cuda.is_available()
 
@@ -41,7 +43,7 @@ if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
 
-model = VAE(input_size=4, hidden1_size=64, hidden2_size=32,
+model = VAE(input_size=4, hidden1_size=8, hidden2_size=4,
             batch_norm=args.batch_norm)
 if args.cuda:
     model.cuda()
@@ -71,7 +73,7 @@ def loss_function(recon_x, x, mu, logvar, logger, timestep):
     logger.scalar_summary('KL divergence', KLD.data[0], timestep)
 
     if args.kl_divergence:
-        return recon_loss + KLD
+        return recon_loss + args.kl_weight * KLD
     else:
         return recon_loss
 
@@ -83,7 +85,10 @@ policy = torch.load(args.policy_dir)
 env = gym.make('Acrobot-v1')
 env.seed(args.seed)
 # Set the logger.
-logger = Logger('./logs_vae_nokl')
+if args.kl_divergence:
+    logger = Logger('./logs_vae')
+else:
+    logger = Logger('./logs_vae_nokl')
 
 
 def select_action(state_):
