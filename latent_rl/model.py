@@ -4,18 +4,20 @@ from torch.autograd import Variable
 
 
 class Policy(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size=6, hidden1_size=18, hidden2_size=36,
+                 action_size=3, value_size=1):
         super(Policy, self).__init__()
+
         self.fc = nn.Sequential(
-            nn.Linear(6, 18),
+            nn.Linear(input_size, hidden1_size),
             nn.LeakyReLU(),
-            nn.Linear(18, 36),
+            nn.Linear(hidden1_size, hidden2_size),
             nn.LeakyReLU(),
-            nn.Linear(36, 18),
+            nn.Linear(hidden2_size, hidden1_size),
             nn.LeakyReLU()
         )
-        self.action_head = nn.Linear(18, 3)
-        self.value_head = nn.Linear(18, 1)
+        self.action_head = nn.Linear(hidden1_size, action_size)
+        self.value_head = nn.Linear(hidden1_size, value_size)
         self.saved_info = []
         self.rewards = []
 
