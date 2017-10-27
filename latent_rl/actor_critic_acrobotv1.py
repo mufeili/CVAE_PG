@@ -131,10 +131,16 @@ def finish_episode(ep_number):
 
         value_loss += F.smooth_l1_loss(value, Variable(Tensor([r])))
 
-    logger.scalar_summary('value_loss', value_loss.data[0], ep_number)
+    if use_cuda:
+        logger.scalar_summary('value_loss', value_loss.data.cpu()[0], ep_number)
+    else:
+        logger.scalar_summary('value_loss', value_loss.data[0], ep_number)
 
     if not args.reinforce:
-        logger.scalar_summary('policy_loss', policy_loss.data[0, 0], ep_number)
+        if use_cuda:
+            logger.scalar_summary('policy_loss', policy_loss.data.cpu()[0, 0], ep_number)
+        else:
+            logger.scalar_summary('policy_loss', policy_loss.data[0, 0], ep_number)
         total_loss = policy_loss + value_loss
         
     optimizer.zero_grad()
