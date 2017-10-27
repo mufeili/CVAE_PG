@@ -42,7 +42,7 @@ parser.add_argument('--reinforce', action='store_true', default=False)
 parser.add_argument('--use-cuda', action='store_true', default=False)
 args = parser.parse_args()
 
-use_cuda = args.cuda and torch.cuda.is_available()
+use_cuda = args.use_cuda and torch.cuda.is_available()
 
 env = gym.make('Acrobot-v1')
 print('observation_space: ', env.observation_space)
