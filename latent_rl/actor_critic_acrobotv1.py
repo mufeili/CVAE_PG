@@ -91,6 +91,8 @@ def select_action(state_):
         state = vae.reparametrize(mu, log_var).data
     else:
         state = torch.from_numpy(state_).float().unsqueeze(0)
+        if use_cuda:
+            state = state.cuda()
 
     probs, state_value = model(Variable(state, requires_grad=False))
     action_ = probs.multinomial()
