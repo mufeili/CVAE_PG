@@ -40,7 +40,7 @@ parser.add_argument('--wrapper', action='store_true', default=False)
 parser.add_argument('--latent', action='store_true', default=False)
 parser.add_argument('--reinforce', action='store_true', default=False)
 parser.add_argument('--use-cuda', action='store_true', default=False)
-parser.add_argument('--use-buffer', action='store_true', default=False)
+parser.add_argument('--use-buffer', action='store_true', default=True)
 parser.add_argument('--buffer-capacity', type=int, default=10000, metavar='N',
                     help='capacity of the replay buffer')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
@@ -143,7 +143,8 @@ def finish_episode(ep_number):
 
             value_loss += F.smooth_l1_loss(value, Variable(Tensor([r])))
 
-    if args.use_buffer:
+    # Note the code currently only supports the use of replay buffer and BP without reinforce at the same time.
+    if args.use_buffer and not args.reinforce:
         if len(buffer) < 5000:
             del model.rewards[:]
             del model.saved_info[:]
@@ -157,6 +158,7 @@ def finish_episode(ep_number):
             value_batch = torch.cat(batch.value_est)
 
             policy_loss -= torch.sum(log_prob_batch * reward_batch)
+            policy_loss.unsqueeze(0)
             value_loss = F.smooth_l1_loss(value_batch, reward_batch)
 
     if use_cuda:
@@ -182,7 +184,7 @@ def finish_episode(ep_number):
         total_loss.backward()
 
     optimizer.step()
-    
+
     del model.rewards[:]
     del model.saved_info[:]
 
