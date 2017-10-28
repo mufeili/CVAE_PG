@@ -40,7 +40,7 @@ parser.add_argument('--wrapper', action='store_true', default=False)
 parser.add_argument('--latent', action='store_true', default=False)
 parser.add_argument('--reinforce', action='store_true', default=False)
 parser.add_argument('--use-cuda', action='store_true', default=False)
-parser.add_argument('--use-buffer', action='store_true', default=True)
+parser.add_argument('--use-buffer', action='store_true', default=False)
 parser.add_argument('--buffer-capacity', type=int, default=10000, metavar='N',
                     help='capacity of the replay buffer')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
@@ -158,7 +158,7 @@ def finish_episode(ep_number):
             value_batch = torch.cat(batch.value_est)
 
             policy_loss -= torch.sum(log_prob_batch * reward_batch)
-            policy_loss.unsqueeze(0)
+            policy_loss = policy_loss.unsqueeze(0)
             value_loss = F.smooth_l1_loss(value_batch, reward_batch)
 
     if use_cuda:
@@ -181,7 +181,7 @@ def finish_episode(ep_number):
         gradients = [torch.ones(1)] + [None] * len(saved_info)
         autograd.backward(final_nodes, gradients)
     else:
-        total_loss.backward()
+        total_loss.backward(retain_graph=True)
 
     optimizer.step()
 
