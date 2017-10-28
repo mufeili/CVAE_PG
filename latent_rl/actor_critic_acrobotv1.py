@@ -45,6 +45,7 @@ parser.add_argument('--buffer-capacity', type=int, default=10000, metavar='N',
                     help='capacity of the replay buffer')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='size of batch to sample from the replay buffer')
+parser.add_argument('--log-dir', type=str, default=None)
 args = parser.parse_args()
 
 use_cuda = args.use_cuda and torch.cuda.is_available()
@@ -106,10 +107,13 @@ if args.wrapper:
     env = gym.wrappers.Monitor(env, outdir, force=True)
 
 # Set the logger.
-if args.reinforce:
-    logger = Logger(''.join(['./', 'logs_actor_critic_reinforce', time_str]))
+if args.log_dir == None:
+    if args.reinforce:
+        logger = Logger(''.join(['./', 'logs_actor_critic_reinforce', time_str]))
+    else:
+        logger = Logger(''.join(['./', 'logs_actor_critic', time_str]))
 else:
-    logger = Logger(''.join(['./', 'logs_actor_critic', time_str]))
+    logger = Logger(''.join(['./', args.log_dir]))
 
 
 def finish_episode(ep_number):
