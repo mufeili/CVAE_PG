@@ -104,13 +104,13 @@ for epoch in range(args.epochs):
     while len(buffer) < args.buffer_capacity:
         state = env.reset()
         # Note in state to state we need states only.
-        buffer.push(Tensor([env.env.state]), None, None)
+        buffer.push(Tensor([env.env.state]), None, None, None, None)
         done = False
         while not done:
             action = select_action(state)
             state, reward, done, _ = env.step(action[0, 0])
             # Note in state to state we need states only.
-            buffer.push(Tensor([env.env.state]), None, None)
+            buffer.push(Tensor([env.env.state]), None, None, None, None)
 
     for i in range(args.iterations):
         sample = buffer.sample(args.batch_size)

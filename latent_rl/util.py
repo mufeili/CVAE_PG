@@ -7,8 +7,7 @@ import tensorflow as tf
 
 
 # Create a new tuple subclass called Transition.
-Transition = namedtuple('Transition',
-                        ('state', 'action', 'cum_return'))
+Transition = namedtuple('Transition', ('state', 'log_prob', 'action', 'value_est', 'cum_return'))
 
 
 class ReplayBuffer(object):

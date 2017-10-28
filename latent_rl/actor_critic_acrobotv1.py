@@ -12,7 +12,7 @@ import numpy as np
 import time
 from collections import namedtuple
 from itertools import count
-from util import Logger, ReplayBuffer
+from util import Logger
 from model import Policy
 
 
@@ -40,6 +40,11 @@ parser.add_argument('--wrapper', action='store_true', default=False)
 parser.add_argument('--latent', action='store_true', default=False)
 parser.add_argument('--reinforce', action='store_true', default=False)
 parser.add_argument('--use-cuda', action='store_true', default=False)
+parser.add_argument('--use-buffer', action='store_true', default=False)
+parser.add_argument('--buffer-capacity', type=int, default=10000, metavar='N',
+                    help='capacity of the replay buffer')
+parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+                    help='size of batch to sample from the replay buffer')
 args = parser.parse_args()
 
 use_cuda = args.use_cuda and torch.cuda.is_available()
@@ -72,6 +77,10 @@ if use_cuda:
 
 optimizer = optim.Adam(model.parameters(), lr=0.002)
 
+if args.use_buffer:
+    from util import ReplayBuffer, Transition
+    buffer = ReplayBuffer(args.buffer_capacity)
+
 
 def select_action(state_):
 
@@ -82,7 +91,7 @@ def select_action(state_):
     else:
         state = torch.from_numpy(state_).float().unsqueeze(0)
 
-    probs, state_value = model(Variable(state))
+    probs, state_value = model(Variable(state, requires_grad=False))
     action_ = probs.multinomial()
     model.saved_info.append(SavedInfo(state, torch.log(probs.gather(1, Variable(action_.data))),
                                       action_, state_value))
@@ -124,12 +133,31 @@ def finish_episode(ep_number):
     for (state, log_prob, action, value), r in zip(saved_info, cum_returns):
         reward = r - value.data[0, 0]
 
-        if args.reinforce:
-            action.reinforce(reward)
+        if args.use_buffer:
+            buffer.push(state, log_prob, action, value, Tensor([[reward]]))
         else:
-            policy_loss -= log_prob * reward
+            if args.reinforce:
+                action.reinforce(reward)
+            else:
+                policy_loss -= log_prob * reward
 
-        value_loss += F.smooth_l1_loss(value, Variable(Tensor([r])))
+            value_loss += F.smooth_l1_loss(value, Variable(Tensor([r])))
+
+    if args.use_buffer:
+        if len(buffer) < 5000:
+            del model.rewards[:]
+            del model.saved_info[:]
+            return
+        else:
+            sample = buffer.sample(args.batch_size)
+            batch = Transition(*zip(*sample))
+
+            log_prob_batch = torch.cat(batch.log_prob)
+            reward_batch = Variable(torch.cat(batch.cum_return), requires_grad=False)
+            value_batch = torch.cat(batch.value_est)
+
+            policy_loss -= torch.sum(log_prob_batch * reward_batch)
+            value_loss = F.smooth_l1_loss(value_batch, reward_batch)
 
     if use_cuda:
         logger.scalar_summary('value_loss', value_loss.data.cpu()[0], ep_number)
@@ -154,6 +182,7 @@ def finish_episode(ep_number):
         total_loss.backward()
 
     optimizer.step()
+    
     del model.rewards[:]
     del model.saved_info[:]
 
@@ -192,7 +221,7 @@ for episode_no in count(1):
 
     model.eval()
 
-    logger.scalar_summary('cum_return', t + 1, episode_no)
+    logger.scalar_summary('cum_return', - (t + 1), episode_no)
 
     running_reward = running_reward * 0.99 + t * 0.01
     finish_episode(episode_no)
