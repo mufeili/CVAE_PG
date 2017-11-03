@@ -12,7 +12,7 @@ import numpy as np
 import time
 from collections import namedtuple
 from itertools import count
-from util import Logger, ReplayBuffer
+from util import Logger
 from model import Policy
 
 
@@ -40,6 +40,7 @@ parser.add_argument('--wrapper', action='store_true', default=False)
 parser.add_argument('--latent', action='store_true', default=False)
 parser.add_argument('--reinforce', action='store_true', default=False)
 parser.add_argument('--use-cuda', action='store_true', default=False)
+parser.add_argument('--log-dir', type=str, default=None)
 args = parser.parse_args()
 
 use_cuda = args.use_cuda and torch.cuda.is_available()
@@ -82,7 +83,7 @@ def select_action(state_):
     else:
         state = torch.from_numpy(state_).float().unsqueeze(0)
 
-    probs, state_value = model(Variable(state))
+    probs, state_value = model(Variable(state, requires_grad=False))
     action_ = probs.multinomial()
     model.saved_info.append(SavedInfo(state, torch.log(probs.gather(1, Variable(action_.data))),
                                       action_, state_value))
@@ -97,10 +98,13 @@ if args.wrapper:
     env = gym.wrappers.Monitor(env, outdir, force=True)
 
 # Set the logger.
-if args.reinforce:
-    logger = Logger(''.join(['./', 'logs_actor_critic_reinforce', time_str]))
+if args.log_dir == None:
+    if args.reinforce:
+        logger = Logger(''.join(['./', 'logs_actor_critic_reinforce', time_str]))
+    else:
+        logger = Logger(''.join(['./', 'logs_actor_critic', time_str]))
 else:
-    logger = Logger(''.join(['./', 'logs_actor_critic', time_str]))
+    logger = Logger(''.join(['./', args.log_dir]))
 
 
 def finish_episode(ep_number):
@@ -192,7 +196,7 @@ for episode_no in count(1):
 
     model.eval()
 
-    logger.scalar_summary('cum_return', t + 1, episode_no)
+    logger.scalar_summary('cum_return', - (t + 1), episode_no)
 
     running_reward = running_reward * 0.99 + t * 0.01
     finish_episode(episode_no)
