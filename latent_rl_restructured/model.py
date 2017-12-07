@@ -34,7 +34,7 @@ class ActorCritic(nn.Module):
         x = self.fc(x)
         action_scores = self.action(x)
         x_value = self.value(x)
-        return F.softmax(action_scores), x_value
+        return F.softmax(action_scores, dim=1), x_value
 
     def select_action(self, x):
         probs, state_value = self.forward(x)
@@ -45,7 +45,7 @@ class ActorCritic(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, input_size=4, hidden1_size=8, hidden2_size=4):
+    def __init__(self, input_size=6, hidden1_size=12, hidden2_size=4):
         super(VAE, self).__init__()
 
         self.fc1 = nn.Sequential(

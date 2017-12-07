@@ -7,14 +7,26 @@ import tensorflow as tf
 import torch
 import torch.nn as nn
 
+Transition_S2S = namedtuple('Transition_S2S', 'state')
+Transition_S2SNext = namedtuple('Transition_S2SNext', ('state', 'next_state'))
 
-def vae_loss_function(recon_x, x, mu, log_var, logger, timestep,
-             use_kl=True, **kwargs):
-    if use_kl:
-        kl_discount = kwargs.get('kl_discount', 0)
+Record_S = namedtuple('Record_S', ('policy_loss', 'value_loss', 'cum_reward'))
+Record_S2S = namedtuple('Record_S2S', ('policy_loss', 'value_loss', 'cum_reward',
+                        'mse_recon_loss', 'kl_loss', 'vae_loss'))
+Record_S2SNext = namedtuple('Record_S2SNext', ('policy_loss', 'value_loss', 
+                            'cum_reward', 'mse_pred_loss', 'kl_loss', 'vae_loss'))
 
-    recon_loss = nn.MSELoss()(recon_x, x)
-    logger.scalar_summary('MSE loss', recon_loss.data[0], timestep)
+
+def vae_loss_function(vae_output, x, mu, log_var, logger, timestep, **kwargs):
+    kl_discount = kwargs.get('kl_discount', 0)
+    mode = kwargs.get('mode', 'a|z(s)')
+
+    mse_loss = nn.MSELoss()(vae_output, x)
+
+    if mode == 'a|z(s)':
+        logger.scalar_summary('mse_recon_loss', mse_loss.data[0], timestep)
+    else:
+        logger.scalar_summary('mse_pred_loss', mse_loss.data[0], timestep)
 
     # See Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -22,22 +34,15 @@ def vae_loss_function(recon_x, x, mu, log_var, logger, timestep,
     # -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     kl_divergence_ = mu.pow(2).add_(log_var.exp()).mul_(-1).add_(1).add_(log_var)
     kl_divergence = torch.sum(kl_divergence_).mul_(-0.5)
-    logger.scalar_summary('KL divergence', kl_divergence.data[0], timestep)
+    logger.scalar_summary('kl_loss', kl_divergence.data[0], timestep)
 
-    if use_kl:
-        return recon_loss + kl_discount * kl_divergence
-    else:
-        return recon_loss
-
-
-# Create a new tuple subclass called Transition.
-Transition = namedtuple('Transition', 'state')
+    return mse_loss, kl_discount * kl_divergence
 
 
 class ReplayBuffer(object):
     """The file implements the replay_buffer for experience replay in DQN.
     The code is mainly based on http://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html"""
-    def __init__(self, capacity):
+    def __init__(self, capacity, Transition):
         """
         Parameters
         ----------
@@ -47,6 +52,7 @@ class ReplayBuffer(object):
         self._capacity = capacity
         self._memory = []
         self._position = 0
+        self._Transition = Transition
 
     def push(self, *args):
         """
@@ -66,7 +72,7 @@ class ReplayBuffer(object):
         """
         if len(self._memory) < self._capacity:
             self._memory.append(None)
-        self._memory[self._position] = Transition(*args)
+        self._memory[self._position] = self._Transition(*args)
         self._position = (self._position + 1) % self._capacity
 
     def sample(self, batch_size):
