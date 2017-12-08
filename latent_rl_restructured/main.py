@@ -245,10 +245,11 @@ def main():
 
             state_ = next_state_
 
-        logger.scalar_summary('cum_reward', cum_reward, episode)
-
         train_actor_critic(episode)
         last_hundred_average = sum(all_cum_reward[-100:])/100
+
+        logger.scalar_summary('cum_reward', cum_reward, episode)
+        logger.scalar_summary('last_hundred_average', last_hundred_average, episode)
 
         all_cum_reward.append(cum_reward)
         all_last_hundred_average.append(last_hundred_average)
