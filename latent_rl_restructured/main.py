@@ -194,6 +194,7 @@ def main():
 
     # To store cum_reward, value_loss and policy_loss from each episode
     all_cum_reward = []
+    all_last_hundred_average = []
     all_value_loss = []
     all_policy_loss = []
 
@@ -247,8 +248,10 @@ def main():
         logger.scalar_summary('cum_reward', cum_reward, episode)
 
         train_actor_critic(episode)
-        all_cum_reward.append(cum_reward)
         last_hundred_average = sum(all_cum_reward[-100:])/100
+
+        all_cum_reward.append(cum_reward)
+        all_last_hundred_average.append(last_hundred_average)
 
         if args.experiment != 'a|s' and episode % args.vae_update_frequency == 0:
             assert len(buffer) >= args.batch_size
@@ -266,15 +269,15 @@ def main():
 
             if args.experiment == 'a|s':
                 record = Record_S(policy_loss=all_policy_loss, value_loss=all_value_loss,
-                                  cum_reward=all_cum_reward)
+                                  cum_reward=all_cum_reward, last_hundred_average=all_last_hundred_average)
             elif args.experiment == 'a|z(s)':
                 record = Record_S2S(policy_loss=all_policy_loss, value_loss=all_value_loss,
-                                    cum_reward=all_cum_reward, mse_recon_loss=all_mse_loss,
-                                    kl_loss=all_kl_loss, vae_loss=all_vae_loss)
+                                    cum_reward=all_cum_reward, last_hundred_average=all_last_hundred_average,
+                                    mse_recon_loss=all_mse_loss, kl_loss=all_kl_loss, vae_loss=all_vae_loss)
             elif args.experiment == 'a|z(s, s_next)' or args.experiment == 'a|z(a_prev, s, s_next)':
                 record = Record_S2SNext(policy_loss=all_policy_loss, value_loss=all_value_loss,
-                                        cum_reward=all_cum_reward, mse_pred_loss=all_mse_loss,
-                                        kl_loss=all_kl_loss, vae_loss=all_vae_loss)
+                                        cum_reward=all_cum_reward, last_hundred_average=all_last_hundred_average,
+                                        mse_pred_loss=all_mse_loss, kl_loss=all_kl_loss, vae_loss=all_vae_loss)
 
             pickle.dump(record, open('/'.join([direc_name, 'record']), 'wb'))
 

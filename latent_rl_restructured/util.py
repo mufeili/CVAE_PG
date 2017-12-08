@@ -10,11 +10,14 @@ import torch.nn as nn
 Transition_S2S = namedtuple('Transition_S2S', 'state')
 Transition_S2SNext = namedtuple('Transition_S2SNext', ('state', 'next_state'))
 
-Record_S = namedtuple('Record_S', ('policy_loss', 'value_loss', 'cum_reward'))
+Record_S = namedtuple('Record_S', ('policy_loss', 'value_loss', 'cum_reward',
+                                   'last_hundred_average'))
 Record_S2S = namedtuple('Record_S2S', ('policy_loss', 'value_loss', 'cum_reward',
-                        'mse_recon_loss', 'kl_loss', 'vae_loss'))
-Record_S2SNext = namedtuple('Record_S2SNext', ('policy_loss', 'value_loss', 
-                            'cum_reward', 'mse_pred_loss', 'kl_loss', 'vae_loss'))
+                                       'last_hundred_average', 'mse_recon_loss',
+                                       'kl_loss', 'vae_loss'))
+Record_S2SNext = namedtuple('Record_S2SNext', ('policy_loss', 'value_loss',
+                                               'cum_reward', 'last_hundred_average',
+                                               'mse_pred_loss', 'kl_loss', 'vae_loss'))
 
 
 def vae_loss_function(vae_output, x, mu, log_var, logger, timestep, **kwargs):

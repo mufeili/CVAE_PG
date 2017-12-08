@@ -32,6 +32,7 @@ for item in item_list:
 
 for _ in range(len(record_dict['cum_reward'])):
     logger.scalar_summary('cum_reward', record_dict['cum_reward'][_], _ + 1)
+    logger.scalar_summary('last_hundred_average', record_dict['last_hundred_average'][_], _ + 1)
     logger.scalar_summary('policy_loss', record_dict['policy_loss'][_], _ + 1)
     logger.scalar_summary('value_loss', record_dict['value_loss'][_], _ + 1)
 
