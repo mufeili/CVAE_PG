@@ -37,7 +37,8 @@ def vae_loss_function(vae_output, x, mu, log_var, logger, timestep, **kwargs):
     # -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     kl_divergence_ = mu.pow(2).add_(log_var.exp()).mul_(-1).add_(1).add_(log_var)
     kl_divergence = torch.sum(kl_divergence_).mul_(-0.5)
-    logger.scalar_summary('kl_loss', kl_divergence.data[0], timestep)
+    kl_loss = kl_discount * kl_divergence
+    logger.scalar_summary('kl_loss', kl_loss.data[0], timestep)
 
     return mse_loss, kl_discount * kl_divergence
 
