@@ -47,8 +47,6 @@ def get_args():
                         help='update vae for vae_update_times every update')
     parser.add_argument('--vae-update-threshold', type=float, default=0.02, metavar='N',
                         help='check if the vae loss no longer decreases between checks')
-    parser.add_argument('--vae-check-interval', type=int, default=500, metavar='N',
-                        help='interval between two checks for vae loss')
     parser.add_argument('--kl-weight', type=float, default=1,
                         help='hyperparameter that discounts kl divergence')
     parser.add_argument('--bp2VAE', action='store_true', default=False,

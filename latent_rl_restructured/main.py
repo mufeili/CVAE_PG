@@ -194,8 +194,8 @@ def main():
                 all_mse_loss.append(mse_loss.data[0])
                 all_kl_loss.append(kl_loss.data[0])
 
-                if len(all_vae_loss) > args.vae_check_interval:
-                    if abs(all_vae_loss[-1] - all_vae_loss[-args.vae_check_interval]) < args.vae_update_threshold:
+                if len(all_vae_loss) > 200:
+                    if abs(sum(all_vae_loss[-100:])/100 - sum(all_vae_loss[-200:-100])/100) < args.vae_update_threshold:
                         update_vae = False
 
     # To store cum_reward, value_loss and policy_loss from each episode
