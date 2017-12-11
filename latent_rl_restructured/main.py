@@ -222,7 +222,7 @@ def main():
                 state_ = Variable(state_, requires_grad=False)
                 mu, log_var = vae.encode(state_)
 
-                if args.bp2VAE:
+                if args.bp2VAE and update_vae:
                     state = vae.reparametrize(mu, log_var)
                 else:
                     state = vae.reparametrize(mu, log_var).detach()
