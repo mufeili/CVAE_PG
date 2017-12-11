@@ -102,6 +102,8 @@ def main():
 
         buffer = ReplayBuffer(args.buffer_capacity, Transition)
 
+        update_vae = True
+
     if args.experiment == 'a|s':
         from util import Record_S
     elif args.experiment == 'a|z(s)':
@@ -192,6 +194,10 @@ def main():
                 all_mse_loss.append(mse_loss.data[0])
                 all_kl_loss.append(kl_loss.data[0])
 
+                if len(all_vae_loss) > args.vae_check_interval:
+                    if abs(all_vae_loss[-1] - all_vae_loss[-args.vae_check_interval]) < args.vae_update_threshold:
+                        update_vae = False
+
     # To store cum_reward, value_loss and policy_loss from each episode
     all_cum_reward = []
     all_last_hundred_average = []
@@ -254,7 +260,7 @@ def main():
         all_cum_reward.append(cum_reward)
         all_last_hundred_average.append(last_hundred_average)
 
-        if args.experiment != 'a|s' and episode % args.vae_update_frequency == 0:
+        if args.experiment != 'a|s' and episode % args.vae_update_frequency == 0 and update_vae:
             assert len(buffer) >= args.batch_size
             train_vae(episode)
 
