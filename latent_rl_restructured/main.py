@@ -194,10 +194,6 @@ def main():
                 all_mse_loss.append(mse_loss.data[0])
                 all_kl_loss.append(kl_loss.data[0])
 
-                if len(all_vae_loss) > 200:
-                    if abs(sum(all_vae_loss[-100:])/100 - sum(all_vae_loss[-200:-100])/100) < args.vae_update_threshold:
-                        update_vae = False
-
     # To store cum_reward, value_loss and policy_loss from each episode
     all_cum_reward = []
     all_last_hundred_average = []
@@ -260,9 +256,14 @@ def main():
         all_cum_reward.append(cum_reward)
         all_last_hundred_average.append(last_hundred_average)
 
-        if args.experiment != 'a|s' and episode % args.vae_update_frequency == 0 and update_vae:
-            assert len(buffer) >= args.batch_size
-            train_vae(episode)
+        if update_vae:
+            if args.experiment != 'a|s' and episode % args.vae_update_frequency == 0:
+                assert len(buffer) >= args.batch_size
+                train_vae(episode)
+
+            if len(all_vae_loss) > 200:
+                if abs(sum(all_vae_loss[-100:]) / 100 - sum(all_vae_loss[-200:-100]) / 100) < args.vae_update_threshold:
+                    update_vae = False
 
         if episode % args.log_interval == 0:
             print('Episode {}\tLast cum return: {:5f}\t100-episodes average cum return: {:.2f}'.format(
