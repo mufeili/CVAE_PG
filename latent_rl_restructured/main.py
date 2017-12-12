@@ -261,8 +261,8 @@ def main():
                 assert len(buffer) >= args.batch_size
                 train_vae(episode)
 
-            if len(all_vae_loss) > 200:
-                if abs(sum(all_vae_loss[-100:]) / 100 - sum(all_vae_loss[-200:-100]) / 100) < args.vae_update_threshold:
+            if len(all_vae_loss) > 1000:
+                if abs(sum(all_vae_loss[-500:]) / 500 - sum(all_vae_loss[-1000:-500]) / 500) < args.vae_update_threshold:
                     update_vae = False
 
         if episode % args.log_interval == 0:
