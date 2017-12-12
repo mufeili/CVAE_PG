@@ -9,6 +9,7 @@ import torch.nn as nn
 
 Transition_S2S = namedtuple('Transition_S2S', 'state')
 Transition_S2SNext = namedtuple('Transition_S2SNext', ('state', 'next_state'))
+Transition_APrevS2SNext = namedtuple('Transition_APrevS2SNext', ('prev_action', 'state', 'next_state'))
 
 Record_S = namedtuple('Record_S', ('policy_loss', 'value_loss', 'cum_reward',
                                    'last_hundred_average'))

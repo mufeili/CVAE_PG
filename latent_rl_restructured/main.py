@@ -10,6 +10,7 @@ import errno
 import numpy as np
 import os
 import pickle
+import random
 import time
 from itertools import count
 
@@ -69,7 +70,8 @@ def main():
 
     if args.experiment == 'a|s':
         dim_x = env.observation_space.shape[0]
-    elif args.experiment == 'a|z(s)' or args.experiment == 'a|z(s, s_next)':
+    elif args.experiment == 'a|z(s)' or args.experiment == 'a|z(s, s_next)' or \
+            args.experiment == 'a|z(a_prev, s, s_next)':
         dim_x = args.z_dim
 
     policy = ActorCritic(input_size=dim_x,
@@ -90,7 +92,18 @@ def main():
         from model import VAE
         from util import ReplayBuffer, vae_loss_function
 
-        vae = VAE()
+        dim_s = env.observation_space.shape[0]
+
+        if args.experiment == 'a|z(s)' or args.experiment == 'a|z(s, s_next)':
+            # one additional dimension in the input size is for action
+            vae = VAE(input_size=dim_s,
+                      hidden1_size=3 * args.z_dim,
+                      hidden2_size=args.z_dim)
+        elif args.experiment == 'a|z(a_prev, s, s_next)':
+            vae = VAE(input_size=dim_s + 1,
+                      hidden1_size=3 * args.z_dim,
+                      hidden2_size=args.z_dim)
+
         if args.use_cuda:
             vae.cuda()
         vae_optimizer = optim.Adam(vae.parameters(), lr=args.vae_lr)
@@ -99,6 +112,8 @@ def main():
             from util import Transition_S2S as Transition
         elif args.experiment == 'a|z(s, s_next)':
             from util import Transition_S2SNext as Transition
+        elif args.experiment == 'a|z(a_prev, s, s_next)':
+            from util import Transition_APrevS2SNext as Transition
 
         buffer = ReplayBuffer(args.buffer_capacity, Transition)
 
@@ -175,7 +190,7 @@ def main():
                                                           train_times, kl_discount=args.kl_weight,
                                                           mode=args.experiment)
 
-                elif args.experiment == 'a|z(s, s_next)':
+                elif args.experiment == 'a|z(s, s_next)' or args.experiment == 'a|z(a_prev, s, s_next)':
                     next_state_batch = Variable(torch.cat(batch.next_state),
                                                 requires_grad=False)
                     predicted_batch, mu, log_var = vae.forward(state_batch)
@@ -211,10 +226,17 @@ def main():
         state_ = torch.Tensor([env.reset()])
         cum_reward = 0
 
+        if args.experiment == 'a|z(a_prev, s, s_next)':
+            action = random.randint(0, 2)
+            state_, reward, done, info = env.step(action)
+            cum_reward += reward
+            state_ = torch.Tensor([np.append(state_, action)])
+
         while not done:
             if args.experiment == 'a|s':
                 state = Variable(state_, requires_grad=False)
-            elif args.experiment == 'a|z(s)' or 'a|z(s, s_next)':
+            elif args.experiment == 'a|z(s)' or args.experiment == 'a|z(s, s_next)' \
+                    or args.experiment == 'a|z(a_prev, s, s_next)':
                 state_ = Variable(state_, requires_grad=False)
                 mu, log_var = vae.encode(state_)
 
@@ -241,9 +263,12 @@ def main():
 
             if args.experiment == 'a|z(s)':
                 buffer.push(state_)
-            elif args.experiment == 'a|z(s, s_next)':
+            elif args.experiment == 'a|z(s, s_next)' or args.experiment == 'a|z(a_prev, s, s_next)':
                 if not done:
                     buffer.push(state_, next_state_)
+
+            if args.experiment == 'a|z(a_prev, s, s_next)':
+                next_state_ = torch.cat([next_state_, torch.Tensor([action])], 1)
 
             state_ = next_state_
 
