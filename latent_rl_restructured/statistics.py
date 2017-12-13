@@ -16,7 +16,7 @@ for folder in os.listdir(args.directory):
     record_list.append(pickle.load(open('/'.join([args.directory, folder,
                                                   'record']), 'rb')))
 
-item_list = list(record_list[0]._fields)
+item_list = ['cum_reward', 'last_hundred_average', 'policy_loss', 'value_loss']
 record_dict_ = dict()
 record_dict = dict()
 
