@@ -98,11 +98,13 @@ def main():
             # one additional dimension in the input size is for action
             vae = VAE(input_size=dim_s,
                       hidden1_size=3 * args.z_dim,
-                      hidden2_size=args.z_dim)
+                      hidden2_size=args.z_dim,
+                      output_size=dim_s)
         elif args.experiment == 'a|z(a_prev, s, s_next)':
             vae = VAE(input_size=dim_s + 1,
                       hidden1_size=3 * args.z_dim,
-                      hidden2_size=args.z_dim)
+                      hidden2_size=args.z_dim,
+                      output_size=dim_s)
 
         if args.use_cuda:
             vae.cuda()

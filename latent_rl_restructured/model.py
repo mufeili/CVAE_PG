@@ -45,7 +45,8 @@ class ActorCritic(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, input_size=6, hidden1_size=12, hidden2_size=4):
+    def __init__(self, input_size=6, hidden1_size=12, hidden2_size=4,
+                 output_size=6):
         super(VAE, self).__init__()
 
         self.fc1 = nn.Sequential(
@@ -59,7 +60,7 @@ class VAE(nn.Module):
         self.fc3 = nn.Sequential(
             nn.Linear(hidden2_size, hidden1_size),
             nn.ReLU(),
-            nn.Linear(hidden1_size, input_size),
+            nn.Linear(hidden1_size, output_size),
         )
 
     def encode(self, x):
