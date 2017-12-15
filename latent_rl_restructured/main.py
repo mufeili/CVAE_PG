@@ -110,10 +110,8 @@ def main():
 
         if args.experiment == 'a|z(s)':
             from util import Transition_S2S as Transition
-        elif args.experiment == 'a|z(s, s_next)':
+        elif args.experiment == 'a|z(s, s_next)' or args.experiment == 'a|z(a_prev, s, s_next)':
             from util import Transition_S2SNext as Transition
-        elif args.experiment == 'a|z(a_prev, s, s_next)':
-            from util import Transition_APrevS2SNext as Transition
 
         buffer = ReplayBuffer(args.buffer_capacity, Transition)
 
