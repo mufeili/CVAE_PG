@@ -101,7 +101,8 @@ def main():
 
         elif args.experiment == 'a|z(a_prev, s, s_next)':
             from model import CVAE
-            vae = CVAE(input_size=dim_s + 1,
+            vae = CVAE(input_size=dim_s,
+                       class_size=1,
                        hidden1_size=3 * args.z_dim,
                        hidden2_size=args.z_dim)
 
