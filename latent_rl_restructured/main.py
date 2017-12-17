@@ -89,22 +89,21 @@ def main():
     policy_optimizer = optim.Adam(policy.parameters(), lr=args.policy_lr)
 
     if args.experiment != 'a|s':
-        from model import VAE
         from util import ReplayBuffer, vae_loss_function
 
         dim_s = env.observation_space.shape[0]
 
         if args.experiment == 'a|z(s)' or args.experiment == 'a|z(s, s_next)':
-            # one additional dimension in the input size is for action
+            from model import VAE
             vae = VAE(input_size=dim_s,
                       hidden1_size=3 * args.z_dim,
-                      hidden2_size=args.z_dim,
-                      output_size=dim_s)
+                      hidden2_size=args.z_dim)
+
         elif args.experiment == 'a|z(a_prev, s, s_next)':
-            vae = VAE(input_size=dim_s + 1,
-                      hidden1_size=3 * args.z_dim,
-                      hidden2_size=args.z_dim,
-                      output_size=dim_s)
+            from model import CVAE
+            vae = CVAE(input_size=dim_s + 1,
+                       hidden1_size=3 * args.z_dim,
+                       hidden2_size=args.z_dim)
 
         if args.use_cuda:
             vae.cuda()
